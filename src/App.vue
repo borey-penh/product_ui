@@ -1,113 +1,132 @@
 <script setup>
-
 import { ref, onMounted } from 'vue'
-
 import axios from 'axios'
-
 
 const products = ref([])
 
-
 const name = ref("")
-
 const price = ref("")
+const editId = ref(null)
 
-
-
+// GET
 function getProducts() {
-
-  axios.get(
-    'http://127.0.0.1:8000/api/products'
-  )
-
+  axios.get('http://127.0.0.1:8000/api/products')
     .then(res => {
-
       products.value = res.data
-
     })
-
 }
 
-
-
-function addProduct() {
-
-
-  axios.post(
-
-    'http://127.0.0.1:8000/api/products',
-
-    {
+// ADD or UPDATE
+function saveProduct() {
+  if (editId.value) {
+    // UPDATE
+    axios.put(`http://127.0.0.1:8000/api/products/${editId.value}`, {
       name: name.value,
       price: price.value
-    }
-
-  )
-
-    .then(() => {
-
-      name.value = ""
-      price.value = ""
-
+    }).then(() => {
+      resetForm()
       getProducts()
-
     })
-
-
+  } else {
+    // CREATE
+    axios.post('http://127.0.0.1:8000/api/products', {
+      name: name.value,
+      price: price.value
+    }).then(() => {
+      resetForm()
+      getProducts()
+    })
+  }
 }
 
+// DELETE
+function deleteProduct(id) {
+  axios.delete(`http://127.0.0.1:8000/api/products/${id}`)
+    .then(() => {
+      getProducts()
+    })
+}
 
+// EDIT (fill form)
+function editProduct(p) {
+  name.value = p.name
+  price.value = p.price
+  editId.value = p.id
+}
+
+// RESET FORM
+function resetForm() {
+  name.value = ""
+  price.value = ""
+  editId.value = null
+}
 
 onMounted(() => {
-
   getProducts()
-
 })
-
-
 </script>
 
-
 <template>
+  <div class="container">
+    <h1>Product Management</h1>
 
-  <h1>
-    Product Management
-  </h1>
+    <div class="form">
+      <input v-model="name" placeholder="Product name" />
+      <input v-model="price" placeholder="Price" />
 
+      <button @click="saveProduct">
+        {{ editId ? 'Update Product' : 'Add Product' }}
+      </button>
+    </div>
 
-  <input v-model="name" placeholder="Product name" />
+    <h2>Products</h2>
 
+    <ul>
+      <li v-for="p in products" :key="p.id">
+        <span>{{ p.name }} - ${{ p.price }}</span>
 
-  <input v-model="price" placeholder="Price" />
-
-
-  <button @click="addProduct">
-
-    Add Product
-
-  </button>
-
-
-
-  <h2>Products</h2>
-
-
-  <ul>
-
-    <li v-for="p in products">
-
-      {{ p.name }}
-      -
-      ${{ p.price }}
-
-    </li>
-
-
-  </ul>
-
-
+        <div>
+          <button @click="editProduct(p)">Edit</button>
+          <button class="delete" @click="deleteProduct(p.id)">Delete</button>
+        </div>
+      </li>
+    </ul>
+  </div>
 </template>
 
 <style scoped>
-  
+.container {
+  max-width: 500px;
+  margin: auto;
+  font-family: Arial;
+}
+
+input {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 10px;
+}
+
+button {
+  padding: 8px 12px;
+  margin-right: 5px;
+  background: #42b983;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+
+.delete {
+  background: #e74c3c;
+}
+
+li {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+  background: #f4f4f4;
+  padding: 10px;
+  border-radius: 6px;
+}
 </style>
