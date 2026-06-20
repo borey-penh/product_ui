@@ -12,7 +12,12 @@ const editId = ref(null)
 function getProducts() {
   axios.get('http://127.0.0.1:8000/api/products')
     .then(res => {
-      products.value = res.data
+      // Support both array response and { data: [...] }
+      products.value = Array.isArray(res.data) ? res.data : (res.data?.data ?? [])
+    })
+    .catch(err => {
+      console.error('GET /api/products failed:', err)
+      products.value = []
     })
 }
 
@@ -22,19 +27,24 @@ function saveProduct() {
     // UPDATE
     axios.put(`http://127.0.0.1:8000/api/products/${editId.value}`, {
       name: name.value,
-      price: price.value
+      // send as number if backend expects numeric price
+      price: Number(price.value)
     }).then(() => {
       resetForm()
       getProducts()
+    }).catch(err => {
+      console.error('PUT /api/products failed:', err)
     })
   } else {
     // CREATE
-    axios.post('http://127.0.0.1:8000/api/products', {
+axios.post('http://127.0.0.1:8000/api/products', {
       name: name.value,
-      price: price.value
+      price: Number(price.value)
     }).then(() => {
       resetForm()
       getProducts()
+    }).catch(err => {
+      console.error('POST /api/products failed:', err)
     })
   }
 }
@@ -46,7 +56,7 @@ function deleteProduct(id) {
       getProducts()
     })
 }
-
+  
 // EDIT (fill form)
 function editProduct(p) {
   name.value = p.name
